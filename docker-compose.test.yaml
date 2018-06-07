@@ -1,0 +1,5 @@
+version: "2"
+services:
+  api:
+    entrypoint: ./wait-for postgres:5432 -- npm run watch:test
+

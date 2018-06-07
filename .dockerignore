@@ -1,0 +1,10 @@
+node_modules
+vendor
+.settings
+.project
+*.log
+charts
+.git
+charts
+lib/.next
+

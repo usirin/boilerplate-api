@@ -1,0 +1,36 @@
+version: "2"
+services:
+
+  api:
+    build: .
+    environment:
+      - DB_HOST=postgres
+      - DB_NAME=postgres_test
+      - DB_USER=postgres_test
+      - DB_PASSWORD=postgres_test
+      - NODE_ENV=development
+      - RSMQ_HOST=rsmq
+      - JWT_SECRET=sofuckingsecret
+    links:
+      - postgres
+      - rsmq
+    depends_on:
+      - postgres
+      - rsmq
+
+  postgres:
+    image: postgres:9.6.4-alpine
+    environment:
+      - POSTGRES_USER=postgres_test
+      - POSTGRES_DB=postgres_test
+      - POSTGRES_PASSWORD=postgres_test
+    ports:
+      - "15432:5432"
+
+  rsmq:
+    image: redis:4.0.11-alpine
+    volumes:
+      - rsmq_data:/data
+
+volumes:
+  rsmq_data:

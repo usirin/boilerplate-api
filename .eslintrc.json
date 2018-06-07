@@ -1,0 +1,6 @@
+{
+  "extends": "@usirin",
+  "rules": {
+    "no-console": "off"
+  }
+}

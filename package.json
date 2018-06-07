@@ -1,0 +1,61 @@
+{
+  "name": "@camia/api",
+  "version": "0.0.0",
+  "description": "",
+  "author": "Umut Sirin <umutsirin1@gmail.com> (https://umut.co/)",
+  "license": "ISC",
+  "main": "lib/index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "knex": "knex",
+    "start": "node server",
+    "test": "lab test -a code -I 'core,__core-js_shared__' --bail -v",
+    "lint": "eslint .",
+    "watch": "nodemon --exec npm start",
+    "watch:test": "nodemon --exec npm test"
+  },
+  "dependencies": {
+    "@sendgrid/mail": "^6.3.1",
+    "apollo-server-hapi": "^2.2.2",
+    "blipp": "^3.1.1",
+    "boom": "^7.2.2",
+    "confidence": "^4.0.1",
+    "db-errors": "^0.1.0",
+    "glue": "5.x.x",
+    "graphql": "^14.0.2",
+    "hapi": "^17.8.1",
+    "hapi-auth-jwt2": "^8.1.0",
+    "hapi-swagger": "^9.1.3",
+    "haute-couture": "^3.1.0",
+    "hoek": "^6.0.4",
+    "inert": "^5.1.2",
+    "joi": "^14.3.0",
+    "jsonwebtoken": "^8.4.0",
+    "knex": "^0.15.2",
+    "objection": "^1.4.0",
+    "objection-db-errors": "^1.0.0",
+    "pg": "^7.6.1",
+    "require-all": "^3.0.0",
+    "rsmq-worker": "^0.5.2",
+    "schmervice": "^1.0.0",
+    "schwifty": "4.x.x",
+    "secure-password": "^3.1.0",
+    "toys": "2.x.x",
+    "uuid": "^3.2.1",
+    "vision": "^5.4.3"
+  },
+  "devDependencies": {
+    "@usirin/eslint-config": "^0.4.0",
+    "code": "^5.2.4",
+    "dotenv": "^6.1.0",
+    "eslint": "^5.9.0",
+    "hpal": "^1.3.0",
+    "hpal-debug": "1.x.x",
+    "lab": "^18.0.0",
+    "nodemon": "^1.18.6",
+    "prettier": "^1.15.2"
+  }
+}

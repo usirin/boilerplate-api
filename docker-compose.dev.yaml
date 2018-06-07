@@ -1,0 +1,8 @@
+version: "2"
+services:
+  api:
+    volumes:
+      - ./lib:/app/lib
+      - ./server:/app/server
+      - ./test:/app/test
+
