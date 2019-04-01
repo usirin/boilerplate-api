@@ -31,195 +31,203 @@ describe('Deployment', () => {
     expect(server.registrations[Package.name]).to.exist()
   })
 
-  it('creates a new user', async () => {
-    const options = {
-      method: 'POST',
-      url: '/auth/register',
-      payload: {
-        email: 'new-user@test.com',
-        password: 'password',
-        username: 'newuser',
-      },
-    }
+  describe('/auth/register', () => {
+    it('creates a new user', async () => {
+      const options = {
+        method: 'POST',
+        url: '/auth/register',
+        payload: {
+          email: 'new-user@test.com',
+          password: 'password',
+          username: 'newuser',
+        },
+      }
 
-    const res = await server.inject(options)
+      const res = await server.inject(options)
 
-    expect(res.statusCode).to.equal(200)
-    expect(res.result.email).to.equal('new-user@test.com')
+      expect(res.statusCode).to.equal(200)
+      expect(res.result.email).to.equal('new-user@test.com')
+    })
+
+    it('creates a register token for a new user', async () => {
+      const options = {
+        method: 'POST',
+        url: '/auth/register',
+        payload: {
+          email: 'register-token@test.com',
+          password: 'register',
+          username: 'registertoken',
+        },
+      }
+
+      const { statusCode, result } = await server.inject(options)
+
+      expect(statusCode).to.equal(200)
+
+      const { Token } = server.models()
+
+      const token = await Token.query()
+        .where({ userId: result.id })
+        .first()
+
+      expect(token.type).to.equal('register')
+    })
+
+    it('fails with already registered user', async () => {
+      const options = {
+        method: 'POST',
+        url: '/auth/register',
+        payload: {
+          email: 'already-registered@test.com',
+          password: 'password',
+          username: 'alreadyregistered',
+        },
+      }
+
+      // first call to the server should create the user
+      const res1 = await server.inject(options)
+      expect(res1.statusCode).to.equal(200)
+
+      // second call should return an error
+      const res2 = await server.inject(options)
+      expect(res2.statusCode).to.equal(400)
+    })
   })
 
-  it('creates a register token for a new user', async () => {
-    const options = {
-      method: 'POST',
-      url: '/auth/register',
-      payload: {
-        email: 'register-token@test.com',
-        password: 'register',
-        username: 'registertoken',
-      },
-    }
+  describe('/auth/login', () => {
+    it('logs a user in using username', async () => {
+      const registerOptions = {
+        method: 'POST',
+        url: '/auth/register',
+        payload: {
+          email: 'login-with-user@test.com',
+          password: 'password',
+          username: 'loginwithuser',
+        },
+      }
 
-    const { statusCode, result } = await server.inject(options)
+      // first call to the server should create the user
+      const registerReq = await server.inject(registerOptions)
+      expect(registerReq.statusCode).to.equal(200)
 
-    expect(statusCode).to.equal(200)
+      const loginUsername = {
+        method: 'POST',
+        url: '/auth/login',
+        payload: {
+          username: 'loginwithuser',
+          password: 'password',
+        },
+      }
 
-    const { Token } = server.models()
+      const loginUsernameReq = await server.inject(loginUsername)
 
-    const token = await Token.query()
-      .where({ userId: result.id })
-      .first()
+      expect(loginUsernameReq.statusCode).to.equal(200)
+      expect(loginUsernameReq.result.token).to.be.a.string()
 
-    expect(token.type).to.equal('register')
+      const loginEmail = {
+        method: 'POST',
+        url: '/auth/login',
+        payload: {
+          email: 'login-with-user@test.com',
+          password: 'password',
+        },
+      }
+
+      const loginEmailReq = await server.inject(loginEmail)
+
+      expect(loginEmailReq.statusCode).to.equal(200)
+      expect(loginEmailReq.result.token).to.be.a.string()
+
+      // save this for later use
+      token = loginEmailReq.result.token
+    })
+
+    it('fails with wrong credentials', async () => {
+      const options = {
+        method: 'POST',
+        url: '/auth/login',
+        payload: {
+          email: 'obviously@wrong.com',
+          password: 'password',
+        },
+      }
+
+      const { statusCode } = await server.inject(options)
+
+      expect(statusCode).to.equal(401)
+    })
+
+    it('fails with wrong password', async () => {
+      const options = {
+        method: 'POST',
+        url: '/auth/login',
+        payload: {
+          email: 'test@test.com',
+          password: 'wrong-password',
+        },
+      }
+
+      const { statusCode } = await server.inject(options)
+
+      expect(statusCode).to.equal(401)
+    })
   })
 
-  it('fails with already registered user', async () => {
-    const options = {
-      method: 'POST',
-      url: '/auth/register',
-      payload: {
-        email: 'already-registered@test.com',
-        password: 'password',
-        username: 'alreadyregistered',
-      },
-    }
+  describe('/auth/user', () => {
+    it('fetches logged in user', async () => {
+      const options = {
+        method: 'GET',
+        url: '/auth/user',
+        headers: {
+          authorization: token,
+        },
+      }
 
-    // first call to the server should create the user
-    const res1 = await server.inject(options)
-    expect(res1.statusCode).to.equal(200)
+      const res = await server.inject(options)
 
-    // second call should return an error
-    const res2 = await server.inject(options)
-    expect(res2.statusCode).to.equal(400)
+      expect(res.statusCode).to.equal(200)
+      expect(res.result.email).to.equal('login-with-user@test.com')
+    })
   })
 
-  it('logs a user in using username', async () => {
-    const registerOptions = {
-      method: 'POST',
-      url: '/auth/register',
-      payload: {
-        email: 'login-with-user@test.com',
-        password: 'password',
-        username: 'loginwithuser',
-      },
-    }
+  describe('/auth/activate', () => {
+    it('activates user', async () => {
+      const options = {
+        method: 'POST',
+        url: '/auth/register',
+        payload: {
+          email: 'activate@test.com',
+          password: 'password',
+          username: 'activate',
+        },
+      }
 
-    // first call to the server should create the user
-    const registerReq = await server.inject(registerOptions)
-    expect(registerReq.statusCode).to.equal(200)
+      let { result, statusCode } = await server.inject(options)
 
-    const loginUsername = {
-      method: 'POST',
-      url: '/auth/login',
-      payload: {
-        username: 'loginwithuser',
-        password: 'password',
-      },
-    }
+      expect(statusCode).to.equal(200)
+      expect(result.email).to.equal('activate@test.com')
+      expect(result.isActive).to.equal(false)
 
-    const loginUsernameReq = await server.inject(loginUsername)
+      const { Token, User } = server.models()
 
-    expect(loginUsernameReq.statusCode).to.equal(200)
-    expect(loginUsernameReq.result.token).to.be.a.string()
+      const token = await Token.query()
+        .where({ userId: result.id })
+        .first()
 
-    const loginEmail = {
-      method: 'POST',
-      url: '/auth/login',
-      payload: {
-        email: 'login-with-user@test.com',
-        password: 'password',
-      },
-    }
+      const activateOptions = {
+        method: 'POST',
+        url: '/auth/activate',
+        payload: {
+          code: token.id,
+        },
+      }
 
-    const loginEmailReq = await server.inject(loginEmail)
+      await server.inject(activateOptions)
 
-    expect(loginEmailReq.statusCode).to.equal(200)
-    expect(loginEmailReq.result.token).to.be.a.string()
+      const user = await User.query().findById(result.id)
 
-    // save this for later use
-    token = loginEmailReq.result.token
-  })
-
-  it('fails with wrong credentials', async () => {
-    const options = {
-      method: 'POST',
-      url: '/auth/login',
-      payload: {
-        email: 'obviously@wrong.com',
-        password: 'password',
-      },
-    }
-
-    const { statusCode } = await server.inject(options)
-
-    expect(statusCode).to.equal(401)
-  })
-
-  it('fails with wrong password', async () => {
-    const options = {
-      method: 'POST',
-      url: '/auth/login',
-      payload: {
-        email: 'test@test.com',
-        password: 'wrong-password',
-      },
-    }
-
-    const { statusCode } = await server.inject(options)
-
-    expect(statusCode).to.equal(401)
-  })
-
-  it('fetches logged in user', async () => {
-    const options = {
-      method: 'GET',
-      url: '/auth/user',
-      headers: {
-        authorization: token,
-      },
-    }
-
-    const res = await server.inject(options)
-
-    expect(res.statusCode).to.equal(200)
-    expect(res.result.email).to.equal('login-with-user@test.com')
-  })
-
-  it('activates user', async () => {
-    const options = {
-      method: 'POST',
-      url: '/auth/register',
-      payload: {
-        email: 'activate@test.com',
-        password: 'password',
-        username: 'activate',
-      },
-    }
-
-    let { result, statusCode } = await server.inject(options)
-
-    expect(statusCode).to.equal(200)
-    expect(result.email).to.equal('activate@test.com')
-    expect(result.isActive).to.equal(false)
-
-    const { Token, User } = server.models()
-
-    const token = await Token.query()
-      .where({ userId: result.id })
-      .first()
-
-    const activateOptions = {
-      method: 'POST',
-      url: '/auth/activate',
-      payload: {
-        code: token.id,
-      },
-    }
-
-    await server.inject(activateOptions)
-
-    const user = await User.query().findById(result.id)
-
-    expect(user.isActive).to.equal(true)
+      expect(user.isActive).to.equal(true)
+    })
   })
 
   describe('Password reset', () => {
